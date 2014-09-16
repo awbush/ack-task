@@ -15,7 +15,7 @@
  * Define DocBlock
  **/
 $title = 'ackt on ' . date('m/d @ H:i');
-$cmd = 'unknown command | ackt';
+$cmd = '... | ackt';
 $scriptName = basename(array_shift($argv));
 $urlHandler = 'file';
 

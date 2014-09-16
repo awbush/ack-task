@@ -11,6 +11,23 @@ so you can click them to open the file. It:
   search results helps.
 - works with ack, grep, Sublime Text, TextMate, and more.
 
+## Requirements
+
+- OS X
+
+- An editor that registers a URL handler in the form:
+
+		$HANDLER://open/?url=$FILE&line=$LINE
+
+	TextMate registers [txmt][mate].
+
+	Sublime Text can be made to register [subl][subl] (click the link, follow
+	the instructions).
+
+	By default, no editor is assumed and links are made in `file://...` form,
+	meaning they may open in your browser or other program. These links don't
+	go to the correct line number.
+
 ## Installation
 
 Put `ackt` somewhere in your PATH, e.g. `/usr/local/bin/` or `~/bin/`.
@@ -28,16 +45,10 @@ Or clone the repo somewhere and symlink to it:
 
 ## Configuration
 
-Links to external editors are supported in the form:
+To configure which editor to open links in, set the `ACKT_HANDLER` environment
+variable or use `--link=HANDLER` on the command line.
 
-	$HANDLER://open/?url=$FILE&line=$LINE
-
-The default is to open the file using `file://` protocol.  Set the
-`ACKT_HANDLER` environment variable or use `--link=HANDLER` on the command line
-to customize it to something else (e.g. [txmt][mate] for TextMate, [subl][subl]
-for Sublime Text).
-
-For example, to use Sublime Text by default:
+For example, to use Sublime Text by default (assuming [subl][subl] is setup):
 
 	echo "export ACKT_HANDLER=subl" >> ~/.bash_profile
 	. ~/.bash_profile
@@ -55,7 +66,7 @@ Then you could use this all-in-one for searching and displaying HTML results:
 
     acktc -i something
 
-The only difference is that the without `--cmd` you'll see "unknown command" in
+The only difference is that the without `--cmd` you'll see `... | ackt` in
 the HTML output. Not a big deal if you remember what you ran. TODO: I'd love
 for this to be auto-detected; if anyone knows how to parse the usage examples
 below without needing this option, submit a pull request!
