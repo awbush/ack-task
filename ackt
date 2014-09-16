@@ -1,0 +1,225 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Converts grep and ack output (file:line:matching text) into links so
+ * you can click them to open the file.
+ *
+ * See -h/--help output and/or readme.md.
+ * 
+ * @author Anthony Bush
+ * @copyright Anthony Bush (http://anthonybush.com/), 12 February, 2010
+ * @package default
+ **/
+
+/**
+ * Define DocBlock
+ **/
+$title = 'ackt on ' . date('m/d @ H:i');
+$cmd = 'unknown command | ackt';
+$scriptName = basename(array_shift($argv));
+$urlHandler = 'file';
+
+// Handle environment overrides
+if (isset($_SERVER['ACKT_HANDLER']))
+{
+	// allow any protocol handler but sanitize it to only alphanum
+	$urlHandler = preg_replace('/[^a-z0-9]/', '', $_SERVER['ACKT_HANDLER']);
+	if (strlen($urlHandler) == 0)
+	{
+		error_log('Invalid ACKT_HANDLER value "' . $_SERVER['ACKT_HANDLER'] . '". Expected subl, txtmt, etc.');
+		exit(11);
+	}
+}
+
+// Handle argument overrides
+foreach ($argv as $arg)
+{
+	if (preg_match('/--cmd=(.*)/', $arg, $match))
+	{
+		$cmd = $match[1];
+		$title = $cmd;
+	}
+	else if (preg_match('/--link=(.*)/', $arg, $match))
+	{
+		$urlHandler = $match[1];
+	}
+	else if ($arg == '-h' || $arg == '--help')
+	{
+		print_usage();
+		exit(0);
+		break;
+	}
+}
+
+function print_usage()
+{
+	global $scriptName, $urlHandler;
+	
+	echo 'NAME
+  ' . $scriptName . ' -- ack/grep search task manager / refactoring tool
+
+SYNOPSIS
+  ' . $scriptName . ' [--cmd=CMD_HINT] [--link=HANDLER]
+
+DESCRIPTION
+  ' . $scriptName . ' converts grep and ack output (file:line:matching text)
+  into HTML links so you can click them to open the file.
+
+ENVIRONMENT OPTIONS
+  ACKT_HANDLER    Set to change the protocol handler. Specifies what external
+                  editor to open clicked links in. Examples: txmt, subl, file
+                  (default=file).
+
+OPTIONS
+  --cmd=CMD_HINT  Set the "command used to find these results" hint.
+  --link=HANDLER  Link handler to use. Overrides ACKT_HANDLER (see above).
+	
+EXAMPLES
+  grep -rin something | grep -v not_this | ackt
+  ack -i something | ack -v not_this | ackt
+
+ENVIRONMENT
+  The default handler is "' . $urlHandler . '" (set ACKT_HANDLER to change)
+
+AUTHOR
+  Anthony Bush <https://github.com/awbush>
+  Created: 2010-02-12
+  Project site: https://github.com/awbush/ack-task
+';
+}
+
+
+// Get header and styles
+ob_start();
+?>
+<html>
+<head>
+	<?php if (!empty($title)) { echo '<title>' . htmlentities($title) . '</title>'; } ?>
+	<style type="text/css" media="screen">
+	/* <![CDATA[ */
+	body, table {
+		margin: 0;
+		padding: 0;
+		color #000;
+	}
+	body, th, td, pre {
+		font-family: Monaco,monospace;
+		font-size: 9pt;
+	}
+	th {
+		text-align: right;
+	}
+	a {
+		text-decoration: none;
+	}
+	a:link,
+	a:hover,
+	a:active {
+		color: blue;
+	}
+	a > span.code {
+		color: black;
+	}
+	#cmd {
+		padding: .5em 1em;
+		background: #333;
+		color: #fff;
+	}
+	#cmd .path {
+		color: #3c0;
+	}
+	#note_tab {
+		background: #666;
+		color: #fff;
+		cursor: pointer;
+		float: right;
+		padding: .5em 1em;
+	}
+	#note_tab.on {
+		background: #ccc;
+		color: #000;
+	}
+	#notes {
+		background: #ccc;
+		display: none;
+		padding: .5em 1em;
+	}
+	#notes.on {
+		display: block;
+	}
+	#notes textarea {
+		width: 100%;
+	}
+	#results {
+		padding: .5em 1em;
+	}
+	#results > div {
+		white-space: pre;
+	}
+	#results > div:hover {
+		background: #FF9;
+	}
+	/* ]]> */
+	</style>
+	<script type="text/javascript">
+	var notes_shown = false;
+	function toggle_notes() {
+		n = document.getElementById('notes');
+		n_tab = document.getElementById('note_tab');
+		if (notes_shown) {
+			n.className = '';
+			n_tab.className = '';
+		} else {
+			n.className = 'on';
+			n_tab.className = 'on';
+		}
+		notes_shown = !notes_shown;
+	}
+
+	function check(id) {
+		document.getElementById(id).checked = true;
+	}
+	</script>
+</head>
+<body>
+	<span id="note_tab" onclick="toggle_notes()">Notes</span>
+	<div id="cmd"><span class="path"><?php echo htmlentities($_SERVER['PWD']); ?>$</span> <?php echo nl2br(htmlentities($cmd)) ?></div>
+	<div style="clear: both"></div>
+	<div id="notes"><textarea rows="3" cols="100"></textarea></div>
+	<div id="results"><?php
+$header = ob_get_clean();
+$footer = '</body></html>';
+
+
+$tmpFileName = tempnam('/tmp', 'ackt') . '.html';
+$handle = fopen($tmpFileName, "w");
+fwrite($handle, $header);
+
+$i = 0;
+$baseDir = getcwd() . '/';
+while ($line = fgets(STDIN))
+{
+	if (!preg_match('/^([^:]+):(\d+):(.*)/', $line, $match))
+	{
+		continue;
+	}
+	
+	++$i;
+	if ($match[1][0] == '/') {
+		$file = 'file://' . $match[1];
+	} else {
+		$file = 'file://' . $baseDir . $match[1];
+	}
+	if ($urlHandler == 'file')
+	{
+		$url = $file;
+	} else {
+		$url = $urlHandler . '://open/?url=' . $file . '&line=' . $match[2];
+	}
+	fwrite($handle, '<div><input type="checkbox" /><input type="checkbox" id="c' . $i . '" /><a href="' . $url . '" onclick="check(\'c' . $i . '\')">' . htmlentities($match[1] . ':' . $match[2] . ':') . '<span class="code">' . htmlentities($match[3]) . "</span></a></div>\n");
+}
+fwrite($handle, "\n" . $i . ' matches.</div>');
+fwrite($handle, $footer);
+
+fclose($handle);
+passthru('open ' . escapeshellarg($tmpFileName));
