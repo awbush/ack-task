@@ -17,7 +17,7 @@ Put `ackt` somewhere in your PATH, e.g. `/usr/local/bin/` or `~/bin/`.
 
 For example:
 
-	curl https://github.com/awbush/ack-task/blob/master/ackt > ackt
+	curl https://raw.githubusercontent.com/awbush/ack-task/master/ackt > ackt
 	chmod a+x ackt
 	test -f /usr/local/bin/ackt || sudo mv ackt /usr/local/bin/
 
