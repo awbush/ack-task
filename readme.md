@@ -21,6 +21,11 @@ For example:
 	chmod a+x ackt
 	test -f /usr/local/bin/ackt || sudo mv ackt /usr/local/bin/
 
+Or clone the repo somewhere and symlink to it:
+
+	git clone git@github.com:awbush/ack-task.git
+	sudo ln -s "$PWD"/ack-task/ackt /usr/local/bin/ackt
+
 ## Configuration
 
 Links to external editors are supported in the form:
