@@ -46,7 +46,7 @@ For example, to use Sublime Text by default:
 
 If you want be reminded of the search command used, specify the `--cmd="..."`
 arg.  If you don't need to perform piped searches (as done with the longer
-examples above), you can make a shortcut that does this for you.  Consider
+examples below), you can make a shortcut that does this for you.  Consider
 this in your `~/.bash_profile` file:
 
     function acktc() { tmpAck="$@"; ack "$@" | ackt --cmd="ack $tmpAck"; }
